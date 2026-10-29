@@ -35,7 +35,7 @@ def _component(f: Finding) -> dict:
         crypto["protocolProperties"] = {"type": "tls", "version": (f.tls_version or "").removeprefix("TLSv"),
                                         "cipherSuites": [suite]}
         crypto["algorithmProperties"] = {"primitive": f.primitive, "parameterSetIdentifier": f.parameter_set or f.algorithm,
-                                         "executionEnvironment": "software-plain-ram", "cryptoFunctions": f.crypto_functions or ["key-agree"]}
+                                         "executionEnvironment": "software-plain-ram", "cryptoFunctions": f.crypto_functions or ["keyderive"]}
     elif f.asset_type == "certificate":
         crypto["certificateProperties"] = {
             "certificateFormat": "X.509", "subjectName": f.cert_subject or "", "issuerName": f.cert_issuer or ""}

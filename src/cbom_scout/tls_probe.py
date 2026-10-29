@@ -43,7 +43,7 @@ def probe_tls_endpoint(host: str, port: int = 443, timeout: float = 5.0) -> Find
                     quantum_status=ev.get("quantum_status", "CRITICAL_SHORS_VULNERABLE"),
                     classical_security_bits=ev.get("classical_security_bits"),
                     nist_quantum_level=ev.get("nist_quantum_level", 0),
-                    crypto_functions=["key-agree", "encrypt", "decrypt"],
+                    crypto_functions=["keyderive", "encrypt", "decrypt"],
                     remediation=(ev.get("remediation", "") +
                                  " PQC group negotiation (X25519MLKEM768) could not be determined via stdlib ssl; verify with the raw ClientHello prober.").strip(),
                     evidence=f"{ssock.version()} {cipher[0]} bits={cipher[2]}")

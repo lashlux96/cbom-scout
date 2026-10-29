@@ -39,7 +39,7 @@ def evaluate_public_key(pub_key: Any) -> dict[str, Any]:
                     key_size=pub_key.curve.key_size, parameter_set=pub_key.curve.name,
                     quantum_vulnerable=True, quantum_status=VULNERABLE,
                     classical_security_bits=pub_key.curve.key_size // 2,
-                    nist_quantum_level=0, crypto_functions=["key-agree", "verify"], remediation=_ECC_REMEDIATION)
+                    nist_quantum_level=0, crypto_functions=["keyderive", "verify"], remediation=_ECC_REMEDIATION)
     if isinstance(pub_key, (ed25519.Ed25519PublicKey, ed448.Ed448PublicKey)):
         name = "Ed25519" if isinstance(pub_key, ed25519.Ed25519PublicKey) else "Ed448"
         return dict(algorithm=name, primitive="signature", key_size=256, parameter_set=name,

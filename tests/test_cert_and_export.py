@@ -51,6 +51,18 @@ def test_cyclonedx_structure_is_spec_shaped(tmp_path):
     json.dumps(bom)  # serializable
 
 
+def test_crypto_functions_are_valid_cyclonedx_enums(tmp_path):
+    # Regression: 'key-agree' is a valid primitive but NOT a valid cryptoFunction;
+    # it broke schema validation on live TLS / EC-certificate components.
+    valid = {"generate", "keygen", "encrypt", "decrypt", "digest", "tag",
+             "keyderive", "sign", "verify", "encapsulate", "decapsulate", "other", "unknown"}
+    _write_cert(tmp_path)
+    bom = to_cyclonedx(scan_tree(tmp_path))
+    for comp in bom["components"]:
+        funcs = comp["cryptoProperties"]["algorithmProperties"]["cryptoFunctions"]
+        assert set(funcs) <= valid, funcs
+
+
 def test_sarif_output():
     sarif = to_sarif([])
     assert sarif["version"] == "2.1.0" and sarif["runs"][0]["results"] == []
