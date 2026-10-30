@@ -17,7 +17,7 @@ See `examples/safe_app.py` (zero findings) vs `examples/vulnerable_app.py`.
 
 ```bash
 pip install -e ".[dev]"
-cbom-scout scan . --probe example.com:443 -o cyclonedx-cbom.json --sarif cbom.sarif
+cbom-scout scan . --probe example.com:443 --pqc-probe example.com:443 -o cyclonedx-cbom.json --sarif cbom.sarif
 cbom-scout scan . --fail-on-vulnerable   # CI gate: exit 1 on Shor-vulnerable / weak crypto
 pytest
 ```
@@ -31,6 +31,7 @@ Suppress known legacy debt with a `.cbom-ignore` file (one glob per line).
 | Static AST | Python call sites: `generate_private_key` (+ key size), weak hashes (MD5/SHA-1), DES/3DES/RC4, ECB mode, symmetric `Cipher`, JWT, TLS contexts — import-resolved, call-level only |
 | Certificates | PEM/DER X.509 in the tree: algorithm, key size/curve, subject/issuer, expiry |
 | Live TLS probe | Negotiated TLS version + cipher suite + peer leaf public key for any host:port (incl. internal services) |
+| Raw PQC probe (`--pqc-probe`) | Hand-built TLS 1.3 ClientHello offering hybrid groups first (`X25519MLKEM768` 0x11ec, `SecP256r1MLKEM768`, `SecP384r1MLKEM1024`, draft Kyber) with coefficient-valid ML-KEM probe shares; parses ServerHello/HelloRetryRequest to report the group the server *actually selects*, with an HRR confirmation retry |
 | Classifier | RSA/ECC/EdDSA/DSA → `CRITICAL_SHORS_VULNERABLE` (NIST quantum level 0), weak classical algos, classical security bits, ML-KEM/ML-DSA parameter sets |
 | Exporters | CycloneDX v1.6 JSON (schema-shaped `cryptoProperties`), SARIF for GitHub Code Scanning, Rich terminal table |
 
@@ -54,17 +55,19 @@ check-jsonschema --schemafile https://cyclonedx.org/schema/bom-1.6.schema.json c
 
 ## Known limitations (stated, not hidden)
 
-- Python's stdlib `ssl` cannot offer/observe PQC hybrid NamedGroups, so the
-  live probe reports version/cipher/cert precisely and marks PQC negotiation
-  *unknown*. A raw ClientHello prober (groups `0x11ec` X25519MLKEM768 etc.)
-  is the next milestone.
+- The stdlib-based `--probe` still cannot offer PQC groups (use `--pqc-probe`
+  for that; the two are complementary — cert identity vs. group negotiation).
+  The raw prober reads group selection only and never completes the handshake:
+  its ML-KEM shares are coefficient-valid probe encodings, not real keypairs.
+  Verified live: google.com and cloudflare.com select `X25519MLKEM768`;
+  github.com selects classical X25519 despite hybrid being offered first.
 - AST engine is Python-only in v0.1; Go (`go/parser`) is next. eBPF runtime
   discovery (uprobes on `SSL_do_handshake`, `sys_enter_connect` PID mapping)
   remains the differentiation wedge on the roadmap below.
 
 ## Roadmap
 
-1. Raw TLS ClientHello prober with hybrid PQC key shares; cert-chain analysis
+1. ~~Raw TLS ClientHello prober with hybrid PQC key shares~~ ✅ done; next: cert-chain analysis
 2. Go AST engine; Terraform/Kubernetes/NGINX crypto-config parsers; ELF/container linked-library scan
 3. eBPF runtime engine (Linux): libssl uprobes + socket/PID mapping for internal mTLS discovery
 4. GitHub Action + baseline diffing; Docker image

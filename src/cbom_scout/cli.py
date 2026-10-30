@@ -8,6 +8,7 @@ from rich.table import Table
 
 from .exporters import write_cyclonedx, write_sarif
 from .models import Finding
+from .pqc_probe import probe_pqc
 from .static_scan import load_ignore_file, scan_tree
 from .tls_probe import probe_tls_endpoint
 
@@ -29,6 +30,7 @@ def _render(findings: list[Finding]) -> None:
 def scan(
     path: Path = typer.Argument(Path("."), help="Repository / directory to scan statically"),
     probe: list[str] = typer.Option([], "--probe", help="Live TLS endpoint host[:port]; repeatable"),
+    pqc_probe: list[str] = typer.Option([], "--pqc-probe", help="Raw ClientHello PQC/hybrid group probe host[:port]; repeatable"),
     output: Path = typer.Option(Path("cyclonedx-cbom.json"), "--output", "-o"),
     sarif: Path | None = typer.Option(None, "--sarif", help="Also write a SARIF file"),
     fail_on_vulnerable: bool = typer.Option(False, "--fail-on-vulnerable", help="Exit 1 if Shor-vulnerable/weak crypto is found (CI gate)"),
@@ -40,6 +42,10 @@ def scan(
     for target in probe:
         host, _, port = target.partition(":")
         if f := probe_tls_endpoint(host, int(port) if port else 443):
+            findings.append(f)
+    for target in pqc_probe:
+        host, _, port = target.partition(":")
+        if f := probe_pqc(host, int(port) if port else 443):
             findings.append(f)
     _render(findings)
     write_cyclonedx(findings, output)
