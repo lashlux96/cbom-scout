@@ -1,3 +1,4 @@
+# Python
 __pycache__/
 *.py[cod]
 .venv/
@@ -6,8 +7,32 @@ dist/
 build/
 *.egg-info/
 .pytest_cache/
+.tox/
+.coverage
+htmlcov/
+
+# Secrets & credentials — never commit (this tool scans certs; keep real ones out)
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+*.keystore
+id_rsa*
+id_ed25519*
+credentials*
+*secret*
+.gitleaks.toml
+
+# cbom-scout scan output (generated artifacts, may contain internal hostnames)
 cbom.json
 cbom-*.json
 cyclonedx-cbom.json
 *.sarif
+
+# OS / editor
 .DS_Store
+.idea/
+.vscode/
