@@ -15,7 +15,7 @@ jobs:
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v5
       # uv reads the 7-day cool-off from [tool.uv] exclude-newer in
       # pyproject.toml; --locked additionally refuses to re-resolve, so CI
