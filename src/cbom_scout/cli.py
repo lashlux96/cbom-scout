@@ -34,10 +34,11 @@ def scan(
     output: Path = typer.Option(Path("cyclonedx-cbom.json"), "--output", "-o"),
     sarif: Path | None = typer.Option(None, "--sarif", help="Also write a SARIF file"),
     fail_on_vulnerable: bool = typer.Option(False, "--fail-on-vulnerable", help="Exit 1 if Shor-vulnerable/weak crypto is found (CI gate)"),
+    probe_only: bool = typer.Option(False, "--probe-only", help="Skip the static scan; only run --probe/--pqc-probe endpoints"),
 ) -> None:
     """Scan a codebase and/or live endpoints, then export a CycloneDX 1.6 CBOM."""
     findings: list[Finding] = []
-    if path.exists():
+    if not probe_only and path.exists():
         findings.extend(scan_tree(path, load_ignore_file(path)))
     for target in probe:
         host, _, port = target.partition(":")

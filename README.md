@@ -13,17 +13,103 @@ produces **zero findings**, while `rsa.generate_private_key(..., key_size=1024)`
 produces one, with file:line, evidence, key size, and remediation.
 See `examples/safe_app.py` (zero findings) vs `examples/vulnerable_app.py`.
 
-## Quickstart
+## Installation
+
+**Prerequisites:** Python 3.11 or newer, and `git`. The recommended installer
+is [`uv`](https://docs.astral.sh/uv/) (it enforces the 7-day dependency
+cool-off described below); plain `pip` also works.
 
 ```bash
-uv sync --locked --all-extras   # pinned deps from uv.lock (see cool-off below)
-uv run cbom-scout scan . --probe example.com:443 --pqc-probe example.com:443 -o cyclonedx-cbom.json --sarif cbom.sarif
-uv run cbom-scout scan . --fail-on-vulnerable   # CI gate: exit 1 on Shor-vulnerable / weak crypto
-uv run pytest
+git clone git@github.com:lashlux96/cbom-scout.git
+cd cbom-scout
 ```
 
-(Plain `pip install -e ".[dev]"` also works, but pip has no release-age
-filter, so the cool-off below only applies through uv.)
+**Option A — uv (recommended):**
+
+```bash
+uv sync --locked --all-extras   # creates .venv from the pinned uv.lock
+uv run cbom-scout version       # sanity check: prints "cbom-scout 0.1.0"
+```
+
+**Option B — pip / venv:**
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -e ".[dev]"
+cbom-scout version
+```
+
+With uv, prefix every command below with `uv run` (as shown). With pip and an
+activated venv, run `cbom-scout ...` directly. You can also run the module
+form: `python -m cbom_scout scan ...`. For full option help at any time:
+`cbom-scout scan --help`.
+
+## Running the tool
+
+The single command is `cbom-scout scan`. It always writes a CycloneDX CBOM
+JSON file (default: `cyclonedx-cbom.json`) and prints a summary table.
+
+**1. Scan a codebase** (static AST + certificates under the given path):
+
+```bash
+uv run cbom-scout scan /path/to/your/project
+uv run cbom-scout scan . -o my-cbom.json          # custom output file
+```
+
+**2. Try the bundled examples first** (a safe smoke test):
+
+```bash
+uv run cbom-scout scan examples
+# -> 4 findings, all from examples/vulnerable_app.py (1024-bit keygen, MD5,
+#    ECB, Cipher); examples/safe_app.py (import-only) yields zero findings.
+```
+
+**3. Probe a live TLS endpoint** (works for internal hosts and non-443 ports
+too; repeat `--probe` for multiple targets). Use `--probe-only` to skip the
+static scan of the current directory:
+
+```bash
+uv run cbom-scout scan . --probe-only --probe google.com:443
+uv run cbom-scout scan . --probe-only --probe internal.corp:8443 --probe db.corp:5432
+```
+
+**4. Check post-quantum key-exchange support** (raw ClientHello prober —
+reports the group the server actually selects, e.g. `X25519MLKEM768` vs
+classical X25519):
+
+```bash
+uv run cbom-scout scan . --probe-only --pqc-probe google.com:443
+```
+
+**5. Combine everything, with SARIF output** for GitHub Code Scanning:
+
+```bash
+uv run cbom-scout scan . \
+  --probe api.example.com:443 --pqc-probe api.example.com:443 \
+  -o cyclonedx-cbom.json --sarif cbom.sarif
+```
+
+**Inspect the result:**
+
+```bash
+python3 -m json.tool cyclonedx-cbom.json | head -50
+```
+
+**Useful flags:**
+
+- `--fail-on-vulnerable` — exit code 1 if any Shor-vulnerable or weak crypto
+  is found; use this as a CI gate (`uv run cbom-scout scan . --fail-on-vulnerable`).
+- `--sarif <file>` — additionally write SARIF for GitHub's Security tab.
+- `-o <file>` — CBOM output path (default `cyclonedx-cbom.json`).
+- **`.cbom-ignore`** — put one glob per line in a file at the scan root to
+  suppress known legacy findings (e.g. `legacy/*.py`).
+
+**Troubleshooting:** `command not found: cbom-scout` → use `uv run cbom-scout ...`
+or activate the venv. A probe that "fails" with a timeout usually means the
+host doesn't expose TLS on that port (or a firewall drops it) — the scan
+continues and still writes the CBOM from the remaining engines. Run the test
+suite with `uv run pytest`.
 
 ## Supply-chain cool-off (7 days)
 
@@ -40,8 +126,6 @@ a **7-day minimum release age** before a dependency version may be used:
 
 The cool-off governs *resolution and upgrades*, not installs from the
 existing lockfile — pinned versions in `uv.lock` are already past it.
-
-Suppress known legacy debt with a `.cbom-ignore` file (one glob per line).
 
 ## What it detects (v0.1 MVP)
 
