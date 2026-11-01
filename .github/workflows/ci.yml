@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      # uv reads the 7-day cool-off from [tool.uv] exclude-newer in
+      # pyproject.toml; --locked additionally refuses to re-resolve, so CI
+      # installs exactly the vetted, pinned versions from uv.lock.
+      - name: Install (locked, 7-day cool-off enforced at lock time)
+        run: uv sync --locked --all-extras --python ${{ matrix.python-version }}
+      - name: Test
+        run: uv run --locked pytest -q

@@ -31,5 +31,14 @@ cbom-scout = "cbom_scout.cli:app"
 [tool.hatch.build.targets.wheel]
 packages = ["src/cbom_scout"]
 
+# Supply-chain cool-off: dependency candidates must have been published at
+# least 7 days before uv will resolve/select them. A freshly-published
+# (potentially compromised or yanked) release is invisible to fresh locks,
+# CI syncs, and upgrades until it has survived a week in public.
+# Applies to resolution (uv lock / uv sync / uv add), not to installing
+# from an existing uv.lock, whose pinned versions are already vetted.
+[tool.uv]
+exclude-newer = "7 days"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]

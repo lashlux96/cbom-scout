@@ -1,0 +1,20 @@
+# Dependabot update PRs obey the same 7-day cool-off as local resolution
+# (see [tool.uv] exclude-newer in pyproject.toml): a dependency version is
+# not even proposed until it has been published for 7 days.
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
+    commit-message:
+      prefix: "deps"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7

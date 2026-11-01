@@ -16,11 +16,30 @@ See `examples/safe_app.py` (zero findings) vs `examples/vulnerable_app.py`.
 ## Quickstart
 
 ```bash
-pip install -e ".[dev]"
-cbom-scout scan . --probe example.com:443 --pqc-probe example.com:443 -o cyclonedx-cbom.json --sarif cbom.sarif
-cbom-scout scan . --fail-on-vulnerable   # CI gate: exit 1 on Shor-vulnerable / weak crypto
-pytest
+uv sync --locked --all-extras   # pinned deps from uv.lock (see cool-off below)
+uv run cbom-scout scan . --probe example.com:443 --pqc-probe example.com:443 -o cyclonedx-cbom.json --sarif cbom.sarif
+uv run cbom-scout scan . --fail-on-vulnerable   # CI gate: exit 1 on Shor-vulnerable / weak crypto
+uv run pytest
 ```
+
+(Plain `pip install -e ".[dev]"` also works, but pip has no release-age
+filter, so the cool-off below only applies through uv.)
+
+## Supply-chain cool-off (7 days)
+
+New dependency releases are a common supply-chain attack window (compromised
+maintainer, yanked-then-replaced artifacts). This project therefore enforces
+a **7-day minimum release age** before a dependency version may be used:
+
+- **Resolver:** `[tool.uv] exclude-newer = "7 days"` in `pyproject.toml` —
+  `uv lock`/`uv sync`/`uv add` cannot select a version published < 7 days ago.
+- **Lockfile:** `uv.lock` pins the vetted set; CI installs with
+  `uv sync --locked`, so CI never re-resolves around the cool-off.
+- **Dependabot:** `.github/dependabot.yml` sets a 7-day cooldown (14 for
+  major bumps), so update PRs aren't even opened for fresh releases.
+
+The cool-off governs *resolution and upgrades*, not installs from the
+existing lockfile — pinned versions in `uv.lock` are already past it.
 
 Suppress known legacy debt with a `.cbom-ignore` file (one glob per line).
 
