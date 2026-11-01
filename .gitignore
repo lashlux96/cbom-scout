@@ -32,6 +32,9 @@ cbom-*.json
 cyclonedx-cbom.json
 *.sarif
 
+# Local planning (not for publication)
+ROADMAP.md
+
 # OS / editor
 .DS_Store
 .idea/

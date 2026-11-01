@@ -80,16 +80,9 @@ check-jsonschema --schemafile https://cyclonedx.org/schema/bom-1.6.schema.json c
   its ML-KEM shares are coefficient-valid probe encodings, not real keypairs.
   Verified live: google.com and cloudflare.com select `X25519MLKEM768`;
   github.com selects classical X25519 despite hybrid being offered first.
-- AST engine is Python-only in v0.1; Go (`go/parser`) is next. eBPF runtime
+- AST engine is Python-only in v0.1 (Go support is planned). Runtime eBPF
   discovery (uprobes on `SSL_do_handshake`, `sys_enter_connect` PID mapping)
-  remains the differentiation wedge on the roadmap below.
-
-## Roadmap
-
-1. ~~Raw TLS ClientHello prober with hybrid PQC key shares~~ ✅ done; next: cert-chain analysis
-2. Go AST engine; Terraform/Kubernetes/NGINX crypto-config parsers; ELF/container linked-library scan
-3. eBPF runtime engine (Linux): libssl uprobes + socket/PID mapping for internal mTLS discovery
-4. GitHub Action + baseline diffing; Docker image
+  is not yet implemented, so internal-only traffic is not yet covered.
 
 ## License
 
